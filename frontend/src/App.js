@@ -9,7 +9,6 @@ import CategoryPage from "./components/CategoryPage";
 import Detail from "./components/detail";
 import Contect from "./components/Contect";
 import Cart from "./components/cart";
-import Checkout from "./components/checkout";
 
 import AdminDashboard from "./components/àdmin/AdminDashboard";
 import ProductManagement from "./components/àdmin/ProductManagement";
@@ -44,10 +43,6 @@ function App() {
           <Route
             path="/cart"
             element={<Cart cart={cart} setCart={setCart} />}
-          />
-          <Route
-            path="/checkout"
-            element={<Checkout cart={cart} setCart={setCart} />}
           />
           <Route
             path="/login"

@@ -19,7 +19,7 @@ export default function Cart() {
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-20">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-[120px]">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
         Shopping Cart
       </h2>

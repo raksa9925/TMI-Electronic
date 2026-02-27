@@ -17,14 +17,7 @@ export default function ProductManagement() {
   const [editForm, setEditForm] = useState({});
   const [editImageFile, setEditImageFile] = useState(null);
 
-  const token = localStorage.getItem("token");
-
   /* ================= LOAD DATA ================= */
-
-  useEffect(() => {
-    fetchCategories();
-    fetchProducts();
-  }, []);
 
   const fetchCategories = async () => {
     const res = await fetch("http://localhost:5000/api/categories");
@@ -37,6 +30,14 @@ export default function ProductManagement() {
     const data = await res.json();
     setProducts(data);
   };
+
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+
+    const interval = setInterval(fetchProducts, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   /* ================= ADD PRODUCT ================= */
 
@@ -51,7 +52,8 @@ export default function ProductManagement() {
     formData.append("price", form.price);
     formData.append("stock", form.stock);
     formData.append("description", form.description);
-    formData.append("categoryId", form.categoryId);
+    formData.append("categoryId", form.categoryId.toString()); 
+    formData.append("image", form.imageFile);
 
     if (form.imageFile) {
       formData.append("image", form.imageFile);
@@ -59,9 +61,6 @@ export default function ProductManagement() {
 
     await fetch("http://localhost:5000/api/products", {
       method: "POST",
-      headers: {
-        Authorization: token
-      },
       body: formData
     });
 
@@ -71,9 +70,9 @@ export default function ProductManagement() {
       name: "",
       price: "",
       stock: "",
-      categoryId: "",
       description: "",
-      imageFile: null
+      imageFile: null,
+      categoryId: ""
     });
   };
 
@@ -83,8 +82,7 @@ export default function ProductManagement() {
     if (!window.confirm("Delete this product?")) return;
 
     await fetch(`http://localhost:5000/api/products/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: token }
+      method: "DELETE"
     });
 
     fetchProducts();
@@ -107,17 +105,12 @@ export default function ProductManagement() {
   /* ================= SAVE EDIT ================= */
 
   const saveEdit = async () => {
-    if (!editForm.name || !editForm.price || !editForm.categoryId) {
-      alert("Fill all required fields");
-      return;
-    }
-
     const formData = new FormData();
     formData.append("name", editForm.name);
     formData.append("price", editForm.price);
     formData.append("stock", editForm.stock);
     formData.append("description", editForm.description);
-    formData.append("categoryId", editForm.categoryId);
+    formData.append("categoryId", Number(editForm.categoryId));
 
     if (editImageFile) {
       formData.append("image", editImageFile);
@@ -125,33 +118,11 @@ export default function ProductManagement() {
 
     await fetch(`http://localhost:5000/api/products/${editId}`, {
       method: "PUT",
-      headers: {
-        Authorization: token
-      },
       body: formData
     });
 
     setEditId(null);
     fetchProducts();
-  };
-
-  /* ================= IMAGE HANDLERS ================= */
-
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setForm((prev) => ({
-      ...prev,
-      imageFile: file
-    }));
-  };
-
-  const handleEditImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setEditImageFile(file);
   };
 
   /* ================= UI ================= */
@@ -211,7 +182,7 @@ export default function ProductManagement() {
               className="w-full border rounded-lg p-3"
               value={form.categoryId}
               onChange={(e) =>
-                setForm({ ...form, categoryId: e.target.value })
+                setForm({ ...form, categoryId: Number(e.target.value) })
               }
             >
               <option value="">Select Category</option>
@@ -222,7 +193,12 @@ export default function ProductManagement() {
               ))}
             </select>
 
-            <input type="file" onChange={handleImage} />
+            <input
+              type="file"
+              onChange={(e) =>
+                setForm({ ...form, imageFile: e.target.files[0] })
+              }
+            />
 
             <button
               onClick={addProduct}
@@ -239,11 +215,11 @@ export default function ProductManagement() {
 
           {products.map((product) => (
             <div key={product.id} className="border rounded-lg p-4 mb-4">
-              
-              {/* FIXED IMAGE DISPLAY */}
-              {product.image && (
+
+              {/* FIXED IMAGE */}
+              {product.image_url && (
                 <img
-                  src={`http://localhost:5000/uploads/${product.image}`}
+                  src={product.image_url}
                   alt={product.name}
                   className="w-24 h-24 object-cover mb-2"
                 />
@@ -268,32 +244,12 @@ export default function ProductManagement() {
                     className="w-full border p-2 mb-2"
                   />
 
-                  <input
-                    type="number"
-                    value={editForm.stock}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, stock: e.target.value })
-                    }
-                    className="w-full border p-2 mb-2"
-                  />
-
-                  <textarea
-                    value={editForm.description}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        description: e.target.value
-                      })
-                    }
-                    className="w-full border p-2 mb-2"
-                  />
-
                   <select
                     value={editForm.categoryId}
                     onChange={(e) =>
                       setEditForm({
                         ...editForm,
-                        categoryId: e.target.value
+                        categoryId: Number(e.target.value)
                       })
                     }
                     className="w-full border p-2 mb-2"
@@ -305,7 +261,12 @@ export default function ProductManagement() {
                     ))}
                   </select>
 
-                  <input type="file" onChange={handleEditImage} />
+                  <input
+                    type="file"
+                    onChange={(e) =>
+                      setEditImageFile(e.target.files[0])
+                    }
+                  />
 
                   <button
                     onClick={saveEdit}
@@ -325,9 +286,7 @@ export default function ProductManagement() {
                 <>
                   <h4 className="font-bold">{product.name}</h4>
                   <p>Category: {product.categoryName}</p>
-                  <p>Stock: {product.stock}</p>
                   <p className="text-green-600">${product.price}</p>
-                  <p>{product.description}</p>
 
                   <button
                     onClick={() => startEdit(product)}

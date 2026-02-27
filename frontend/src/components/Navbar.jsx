@@ -12,29 +12,32 @@ function Navbar({ search, setSearch }) {
   const [showMenu, setShowMenu] = useState(false);
   const [categories, setCategories] = useState([]);
   const menuRef = useRef(null);
-  const inputRef = useRef(null); // ✅ add this line to define the ref
+  const inputRef = useRef(null); 
 
   /* ---------- DARK MODE ---------- */
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
-  /* ---------- LOAD CATEGORIES ---------- */
-  const loadCategories = () => {
-    const stored = JSON.parse(localStorage.getItem("categories")) || [];
-    setCategories(stored);
+  /* ---------- LOAD CATEGORIES FROM BACKEND ---------- */
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/categories");
+      const data = await res.json();
+      setCategories(data);
+    } catch (error) {
+      console.error("Failed to load categories:", error);
+    }
   };
 
   useEffect(() => {
-    loadCategories();
-    window.addEventListener("categoriesUpdated", loadCategories);
-    window.addEventListener("storage", loadCategories);
-    return () => {
-      window.removeEventListener("categoriesUpdated", loadCategories);
-      window.removeEventListener("storage", loadCategories);
-    };
-  }, []);
+    fetchCategories();
 
+    // Auto refresh when category added
+    const interval = setInterval(fetchCategories, 5000); // refresh every 5 sec
+
+    return () => clearInterval(interval);
+  }, []);
   /* ---------- CLICK OUTSIDE ---------- */
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -112,7 +115,7 @@ function Navbar({ search, setSearch }) {
               />
             </Link>
 
-            <Link to="/contact" className="hover:text-orange-400 font-medium">
+            <Link to="/contect" className="hover:text-orange-400 font-medium">
               Contact
             </Link>
 
@@ -139,7 +142,7 @@ function Navbar({ search, setSearch }) {
             doSearch();
           }}
         >
-          <div className="relative w-[300px] sm:w-[450  px] md:w-[550px]">
+          <div className="relative w-[300px] sm:w-[450px] md:w-[550px]">
             <input
               type="text"
               placeholder="Search products"

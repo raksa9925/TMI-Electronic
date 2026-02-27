@@ -13,7 +13,7 @@ function OrderManagement() {
 
       const data = await res.json();
 
-      // 🔥 Ensure numeric values are numbers
+      // Ensure numeric values are numbers
       const formattedOrders = data.map((order) => ({
         ...order,
         totalAmount: Number(order.totalAmount),
@@ -46,13 +46,31 @@ function OrderManagement() {
           body: JSON.stringify({ status: newStatus }),
         }
       );
-
       if (!res.ok) throw new Error("Failed to update");
-
       await fetchOrders();
     } catch (error) {
       console.error(error);
       alert("Failed to update order status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- Delete Order ----------------
+  const handleDelete = async (orderId) => {
+    if (!window.confirm("Are you sure you want to delete this order?")) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/orders/${orderId}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) throw new Error("Failed to delete order");
+      await fetchOrders();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to delete order");
     } finally {
       setLoading(false);
     }
@@ -90,7 +108,7 @@ function OrderManagement() {
   };
 
   return (
-  <div className="max-w-6xl mx-auto py-[120px] px-4">
+    <div className="max-w-6xl mx-auto py-[120px] px-4">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold dark:text-white">Manage Orders</h1>
         <Link
@@ -107,9 +125,7 @@ function OrderManagement() {
           <h3 className="text-sm text-gray-600 dark:text-gray-300 mb-2">
             Total Orders
           </h3>
-          <p className="text-3xl font-bold dark:text-white">
-            {orders.length}
-          </p>
+          <p className="text-3xl font-bold dark:text-white">{orders.length}</p>
         </div>
 
         <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg shadow">
@@ -171,8 +187,7 @@ function OrderManagement() {
                           {item.productName}
                         </p>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Qty: {item.quantity} × $
-                          {item.price.toFixed(2)}
+                          Qty: {item.quantity} × ${item.price.toFixed(2)}
                         </p>
                       </div>
                       <p className="font-semibold dark:text-white">
@@ -191,19 +206,29 @@ function OrderManagement() {
                     </span>
                   </p>
 
-                  <select
-                    value={order.status}
-                    onChange={(e) =>
-                      handleStatusUpdate(order.id, e.target.value)
-                    }
-                    disabled={loading}
-                    className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="processing">Processing</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={order.status}
+                      onChange={(e) =>
+                        handleStatusUpdate(order.id, e.target.value)
+                      }
+                      disabled={loading}
+                      className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="processing">Processing</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+
+                    <button
+                      onClick={() => handleDelete(order.id)}
+                      disabled={loading}
+                      className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

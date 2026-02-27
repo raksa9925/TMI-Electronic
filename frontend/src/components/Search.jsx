@@ -1,55 +1,79 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 export default function SearchPage() {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Read query from URL ?q=phone
+  // Get ?q=phone from URL
   const queryParams = new URLSearchParams(location.search);
   const searchQuery = queryParams.get("q") || "";
 
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load all products from localStorage
-    const allProducts = JSON.parse(localStorage.getItem("products")) || [];
+    const fetchSearchResults = async () => {
+      try {
+        setLoading(true);
 
-    // Filter by name (case-insensitive)
-    const filtered = allProducts.filter(p =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+        const res = await fetch(
+          `http://localhost:5000/api/products/search?name=${searchQuery}`
+        );
 
-    setProducts(filtered);
-  }, [searchQuery]); // re-run if URL query changes
+        const data = await res.json();
+        setProducts(data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Search failed:", error);
+        setLoading(false);
+      }
+    };
+
+    if (searchQuery) {
+      fetchSearchResults();
+    } else {
+      setProducts([]);
+      setLoading(false);
+    }
+  }, [searchQuery]);
 
   return (
     <div className="pt-24 px-5 pb-10 bg-gray-100 dark:bg-gray-900 min-h-screen">
 
-      {products.length === 0 ? (
+      {loading ? (
+        <p className="text-center text-gray-500 dark:text-gray-400 py-10">
+          Searching...
+        </p>
+      ) : products.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-center py-10">
           No products found
         </p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map(p => (
+          {products.map((p) => (
             <div
               key={p.id}
-              className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden hover:shadow-xl transition relative"
+              onClick={() => navigate(`/detail/${p.id}`, { state: p })}
+              className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden hover:shadow-xl transition cursor-pointer"
             >
-              {p.image && (
+              {p.image_url && (
                 <div className="overflow-hidden h-[200px] w-full flex items-center justify-center">
                   <img
-                    src={p.image}
+                    src={p.image_url}
                     alt={p.name}
-                    className="h-full w-full object-contain transform hover:scale-110 transition duration-300 ease-in-out"
+                    className="h-full w-full object-contain transform hover:scale-110 transition duration-300"
                   />
                 </div>
               )}
+
               <div className="p-4">
-                <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-1">
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-1 truncate">
                   {p.name}
                 </h3>
-                <p className="text-green-600 font-semibold text-lg">${p.price}</p>
+                <p className="text-green-600 font-semibold text-lg">
+                  ${p.price}
+                </p>
               </div>
             </div>
           ))}
